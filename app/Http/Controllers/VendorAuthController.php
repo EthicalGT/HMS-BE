@@ -187,9 +187,16 @@ class VendorAuthController extends Controller
                 ], 403);
             }
 
+            // ✅ Generate JWT token using helper
+            $token = create_jwt([
+                'vendor_id' => $vendor->id,
+                'email'     => $vendor->email,
+            ], 120); // valid for 120 minutes
+
             return response()->json([
                 'success' => true,
                 'message' => 'Login successful',
+                'token'   => $token,
             ]);
 
         } catch (ValidationException $e) {
@@ -197,10 +204,11 @@ class VendorAuthController extends Controller
                 'success' => false,
                 'errors' => $e->errors(),
             ], 422);
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => 'Something went wrong: ' . $e->getMessage(),
             ], 500);
         }
     }
