@@ -6,11 +6,11 @@ use App\Http\Controllers\HawkerController;
 use App\Http\Controllers\VendorAuthController;
 use App\Http\Controllers\VendorController;
 
-Route::post('/register_hawker', [HawkerController::class, 'registerHawker']);
+Route::post('/hawker/register', [HawkerController::class, 'registerHawker']);
 
-Route::post('/verify_hawker', [OTPController::class, 'validateOTP']);
+Route::post('/hawker/verify', [OTPController::class, 'validateOTP']);
 
-Route::post('/hawker_login', [HawkerController::class, 'loginHawker']);
+Route::post('/hawker/login', [HawkerController::class, 'loginHawker']);
 
 //vendor's api
 Route::post('/vendor/register', [VendorAuthController::class, 'register']);
