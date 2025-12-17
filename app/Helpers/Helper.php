@@ -20,6 +20,11 @@ if (!function_exists('generate_otp')) {
     }
 }
 
+
+
+
+// if we want to use jwt then first    
+//composer require firebase/php-jwt
 if (!function_exists('create_jwt')) {
     /**
      * Generate JWT token

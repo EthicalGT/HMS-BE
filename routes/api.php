@@ -17,7 +17,7 @@ Route::post('/vendor/register', [VendorAuthController::class, 'register']);
 Route::post('/vendor/verify-otp', [VendorAuthController::class, 'verifyOtp']);
 Route::post('/vendor/login', [VendorAuthController::class, 'login']);
 
-// Get all vendors
+//get all vendors
 Route::get('/vendors', [VendorController::class, 'index']);
 
 

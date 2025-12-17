@@ -187,7 +187,7 @@ class VendorAuthController extends Controller
                 ], 403);
             }
 
-            // ✅ Generate JWT token using helper
+            // ✅ Generate JWT token using heplper.php
             $token = create_jwt([
                 'vendor_id' => $vendor->id,
                 'email'     => $vendor->email,
