@@ -10,6 +10,14 @@ use App\Services\EmailService;
 
 class HawkerController extends Controller
 {
+    private $hawkersModel;
+
+    public function __construct()
+    {
+        $this->hawkersModel = new Hawkers();
+        $this->otpModel = new Otp();
+    }
+
     public function registerHawker(Request $req)
 {
     $email = $req->email;
@@ -20,9 +28,6 @@ class HawkerController extends Controller
             'message' => 'An OTP has already been sent. Please check your email.',
         ], 400);
     }
-
-    $hawkersModel = new Hawkers();
-    $otpModel = new Otp();
 
     $data = [
         'full_name'         => $req->full_name,
@@ -37,7 +42,7 @@ class HawkerController extends Controller
         'profile_photo_url' => '/static/img/profile_picture/default.png',
     ];
 
-    $result = $hawkersModel->registerHawkers($data);
+    $result = $this->hawkersModel->registerHawkers($data);
 
     if (!$result['success']) {
         return response()->json([
@@ -53,7 +58,7 @@ class HawkerController extends Controller
         'email' => $email,
     ];
 
-    $result2 = $otpModel->registerOTP($otpData);
+    $result2 = $this->otpModel->registerOTP($otpData);
 
     if (!$result2['success']) {
         return response()->json([
@@ -89,5 +94,26 @@ class HawkerController extends Controller
         'status'  => 'success',
         'message' => 'Registration successful, kindly check your email for OTP verification.',
     ]);
+    }
+
+    public function loginHawker(Request $req)
+    {
+        $data = [
+            'email' => $req->email,
+            'password' => $req->password,
+        ];
+
+        $stored_hash = $this->hawkersModel->retrieveHawkerPWD($data['email']);
+        if (!$stored_hash || !Hash::check($data['password'], $stored_hash)) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Invalid email or password.',
+            ], 401);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Login successful.',
+        ]);
     }
 }

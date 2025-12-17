@@ -22,4 +22,12 @@ class Hawkers extends Model
     }
 }
 
+public function retrieveHawkerPWD($email): ?string
+{
+    return DB::table($this->table)
+        ->where('email', $email)
+        ->where('status', 'active')
+        ->value('password_hash');
+
+}
 }
