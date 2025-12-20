@@ -2,26 +2,43 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
-class Otp extends Model
+class Otp extends Model 
 {
-    use HasFactory;
+    protected $table = "otp";
+    protected $current_time;
+    
+    public function checkOTP($email, $otp):bool {
+        return DB::table($this->table)->where('email', $email)->where('otp', $otp)->where('expires_at', '>=',now())->exists();
+    }
 
-    protected $table = 'otp';
-    public $timestamps = false;
+    public function updateOTPStatus($email, $otp): bool
+    {
+        return DB::table($this->table)
+            ->where('email', $email)
+            ->where('otp', $otp)
+            ->where('status', 'unverified')
+            ->update(['status' => 'verified']) > 0;
+    }   
 
-    protected $fillable = [
-        'otp',
-        'user_type',
-        'vendor_email',
-        'hawker_mobile',
-        'status',
-        'expires_at',
-    ];
+    public function canRequestOTP($email): bool
+    {
+        return DB::table($this->table)
+            ->where('email', $email)
+            ->where('created_at', '>=', now()->subMinutes(10))
+            ->count() === 0;
+    }
 
-    protected $casts = [
-        'expires_at' => 'datetime',
-    ];
+    public function registerOTP(array $data) {
+    try {
+        DB::table($this->table)->insert($data);
+        return ["success" => true];
+    } catch (\Exception $e) {
+        return ["success" => false, "error" => $e->getMessage()];
+    }
+    }
+
 }

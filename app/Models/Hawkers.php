@@ -30,4 +30,13 @@ public function retrieveHawkerPWD($email): ?string
         ->value('password_hash');
 
 }
+public function checkHawkerPresent($email): ?bool
+{
+    $count = DB::table($this->table)
+        ->where('email', $email)
+        ->where('status', 'active')
+        ->count();
+
+    return $count > 0;
+}
 }

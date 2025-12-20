@@ -2,11 +2,19 @@
 
 namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Route;
+use App\Models\Otp;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 
 class OTPController extends Controller {
+    public function __construct()
+    {
+        $this->otpModel = new Otp();
+    }
     public function validateOTP(Request $request)
 {
     $email = session('cu_email');
+    echo "Retrieved session email: " . $email;
 
     if (!$email) {
         return response()->json([
@@ -19,16 +27,14 @@ class OTPController extends Controller {
         'otp' => 'required|string',
     ]);
 
-    $otpModel = new Otp();
-
-    if (!$otpModel->checkOTP($email, $request->otp)) {
+    if (!$this->otpModel->checkOTP($email, $request->otp)) {
         return response()->json([
             'status' => 'failed',
             'message' => 'Invalid OTP or OTP expired.'
         ], 400);
     }
 
-    if (!$otpModel->updateOTPStatus($email, $request->otp)) {
+    if (!$this->otpModel->updateOTPStatus($email, $request->otp)) {
         return response()->json([
             'status' => 'failed',
             'message' => 'OTP status updation failed. Please try again.'
@@ -39,7 +45,8 @@ class OTPController extends Controller {
 
     return response()->json([
         'status' => 'success',
-        'message' => 'OTP verified successfully. You can proceed for login.'
+        'message' => 'OTP verified successfully. You can proceed for login.',
+        'redirectTo' => '/hawker_dashboard',
     ], 200);
 }
 }

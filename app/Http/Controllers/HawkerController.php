@@ -39,7 +39,7 @@ class HawkerController extends Controller
         'city'              => $req->city,
         'state'             => $req->state,
         'pincode'           => $req->pincode,
-        'profile_photo_url' => '/static/img/profile_picture/default.png',
+        'profile_photo_url' => '/assets/img/profile_pictures/user.png',
     ];
 
     $result = $this->hawkersModel->registerHawkers($data);
@@ -53,13 +53,13 @@ class HawkerController extends Controller
 
     $otp = generate_otp(6);
 
-     Otp::create([
-                'otp'          => Hash::make($otp),
-                'user_type'    => 'hawker',
-                'hawker_mobile' => $hawkers->phone_number,
-                'status'       => 'unverified',
-                'expires_at'   => now()->addMinutes(10),
-            ]);
+    $otpData = [
+        'hawker_mobile' => $data['phone_number'],
+        'otp'         => $otp,
+        'user_type'   => 'hawker',
+    ];
+
+    $result2 = $this->otpModel->registerOTP($otpData);
 
     if (!$result2['success']) {
         return response()->json([
@@ -72,11 +72,11 @@ class HawkerController extends Controller
     $subject = "HMS Account Verification Code";
     $body = "
         <h2>HMS Account Verification</h2>
-        <p>Hello,</p>
+        <p>Dear {$data['full_name']},</p>
         <p>Use the following One-Time Password (OTP) to verify your account:</p>
         <h1 style='color:#2d89ef;'>{$otp}</h1>
         <p>This OTP is valid for <strong>10 minutes</strong>.</p>
-        <p>Do not share this OTP.</p>
+        <p>Do not share this OTP with anyone.</p>
         <p>Thank you,<br>HMS Team</p>
     ";
 
@@ -90,6 +90,7 @@ class HawkerController extends Controller
     }
 
     session(['cu_email' => $email]);
+    echo "Session set for cu_email: " . session('cu_email');
 
     return response()->json([
         'status'  => 'success',
@@ -104,6 +105,13 @@ class HawkerController extends Controller
             'password' => $req->password,
         ];
 
+        if($this->hawkersModel->checkHawkerPresent($data['email']) === false) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Hawker account does not exist.',
+            ], 404);
+        }
+
         $stored_hash = $this->hawkersModel->retrieveHawkerPWD($data['email']);
         if (!$stored_hash || !Hash::check($data['password'], $stored_hash)) {
             return response()->json([
@@ -112,9 +120,32 @@ class HawkerController extends Controller
             ], 401);
         }
 
+        $token = create_jwt(['cuser' => $data['email'], 'role' => 'hawker'], 10);
+        if(is_jwt_valid($token)) {
+            echo "JWT Token is valid.";
+        }else{
+            echo "JWT Token is invalid.";
+        }
+
         return response()->json([
             'status' => 'success',
             'message' => 'Login successful.',
+        ]);
+    }
+
+    public function getCurrentUser(){
+        $cuser = session('cu_email');
+
+        if (!$cuser) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'No currently active user found for account otp verification.',
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $cuser,
         ]);
     }
 }

@@ -2,11 +2,10 @@
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 
 if (!function_exists('generate_otp')) {
-    /**
-     * Generate random OTP of given length
-     */
     function generate_otp(int $length): string
     {
         $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -20,36 +19,65 @@ if (!function_exists('generate_otp')) {
     }
 }
 
+const JWT_BLACKLIST_PREFIX = 'jwt_blacklist_';
 
+// Create JWT Token
+function create_jwt(array $payload, int $expiryMinutes = 10): string
+{
+    $key = config('JWT_SECRET');
 
+    if (!$key) {
+        throw new \Exception('JWT_SECRET is not set');
+        echo "JWT_SECRET is not set in the environment variables.";
+        exit;
+    }
 
-// if we want to use jwt then first    
-//composer require firebase/php-jwt
-if (!function_exists('create_jwt')) {
-    /**
-     * Generate JWT token
-     *
-     * @param array $payload
-     * @param int $expiryMinutes
-     * @return string
-     */
-    function create_jwt(array $payload, int $expiryMinutes = 60): string
-    {
-         $key = config('jwt.secret');
+    $issuedAt = time();
+    $expire = $issuedAt + ($expiryMinutes * 60);
 
+    echo "JWT Token created successfully.";
 
-        if (!$key) {
-            throw new \Exception('JWT_SECRET is not set in .env file');
+    return JWT::encode(array_merge($payload, [
+        'iat' => $issuedAt,
+        'exp' => $expire,
+        'jti' => (string) Str::uuid(),
+    ]), $key, 'HS256');
+}
+
+// Validate JWT Token 
+function is_jwt_valid(string $token): bool
+{
+    try {
+        $key = config('jwt.secret');
+        $decoded = JWT::decode($token, new Key($key, 'HS256'));
+
+        if ($decoded->exp < time()) {
+            return false;
         }
 
-        $issuedAt = time();
-        $expire = $issuedAt + ($expiryMinutes * 60);
+        return !Cache::has(JWT_BLACKLIST_PREFIX . $decoded->jti);
+    } catch (\Exception $e) {
+        return false;
+    }
+}
 
-        $tokenPayload = array_merge($payload, [
-            'iat' => $issuedAt,
-            'exp' => $expire,
-        ]);
+// Destroy JWT Token (LOGOUT)
+function destroy_jwt(string $token): void
+{
+    try {
+        $key = config('jwt.secret');
+        $decoded = JWT::decode($token, new Key($key, 'HS256'));
 
-        return JWT::encode($tokenPayload, $key, 'HS256');
+        $ttl = $decoded->exp - time();
+
+        if ($ttl > 0) {
+            Cache::put(
+                JWT_BLACKLIST_PREFIX . $decoded->jti,
+                true,
+                $ttl
+            );
+        }
+    } catch (\Exception $e) {
+        echo "Ignored invalid tokens";
     }
 }

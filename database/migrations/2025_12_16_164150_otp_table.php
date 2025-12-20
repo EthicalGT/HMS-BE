@@ -18,10 +18,10 @@ return new class extends Migration
             $table->enum('user_type', ['vendor', 'hawker']);
 
             // 👇 FK for Vendor (email)
-            $table->string('vendor_email', 150)->nullable()->default('N/A');
+            $table->string('vendor_email', 150)->nullable();
 
             // 👇 FK for Hawker (mobile)
-            $table->string('hawker_mobile', 15)->nullable()->default('N/A');
+            $table->string('hawker_mobile', 15)->nullable();
 
             $table->enum('status', ['unverified', 'verified'])
                   ->default('unverified');
