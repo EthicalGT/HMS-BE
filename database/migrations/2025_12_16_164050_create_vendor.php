@@ -3,46 +3,65 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
     public function up(): void
     {
         Schema::create('vendors', function (Blueprint $table) {
-            $table->id();
 
-            // Basic details
-            $table->string('name', 150);
-            $table->string('contact_person', 150);
-            $table->string('phone', 15)->unique();
-            $table->string('email', 150)->unique();
+            // PRIMARY KEY
+            $table->string('email', 150)->primary();
 
-            // Authentication
-            $table->string('password');
+            $table->string('fullname', 150)->nullable();
 
-            // Identity
-            $table->string('aadhaar_no', 12)->unique();
+            // UNIQUE ONLY
+            $table->string('contact_no', 15)->unique()->nullable();
+            $table->string('aadhaar_number', 12)->unique()->nullable();
 
-            // Address details
-            $table->string('address_line1', 255);
-            $table->string('address_line2', 255)->nullable();
-            $table->string('city', 100);
-            $table->string('state', 100);
-            $table->string('pincode', 10);
-            $table->string('country', 100)->default('India');
+            $table->string('firm_name', 150)->nullable();
 
-            // Business details
-            $table->string('gst_no', 20)->nullable()->unique();
+            $table->enum('product_category', [
+                'vegetables',
+                'beverage',
+                'street_food',
+                'snacks',
+                'fruits',
+                'dairy_product',
+                'bakery_item',
+                'meat_seafood',
+                'flowers',
+                'groceries',
+                'sweet',
+                'spices'
+            ]);
 
-            // Image
-            $table->string('image')->nullable();
+            $table->text('firm_addr')->nullable();
 
-            // Status
-            $table->enum('status', ['active', 'inactive'])
-                  ->default('inactive');
+            $table->string('password')->nullable();
 
-            // Timestamps
-            $table->timestamps();
+            $table->string('status')->default('active');
+
+            $table->string('city', 100)->nullable();
+            $table->string('state', 100)->nullable();
+            $table->string('pincode', 10)->nullable();
+            $table->string('gstin_no', 15)->nullable();
+
+            $table->text('profile_photo_url')->nullable();
+
+            $table->enum('aadhaar_verified', ['unverified', 'verified'])
+                  ->default('unverified');
+
+            $table->string('role', 20)->default('vendor');
+
+            // TIMESTAMPS
+            $table->timestamp('created_at')
+                  ->default(DB::raw('CURRENT_TIMESTAMP'));
+
+            $table->timestamp('updated_at')
+                  ->default(DB::raw('CURRENT_TIMESTAMP'))
+                  ->useCurrentOnUpdate();
         });
     }
 

@@ -9,15 +9,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("
-            CREATE TYPE otp_status AS ENUM ('unverified', 'verified')
-        ");
-
         Schema::create('otp', function (Blueprint $table) {
             $table->bigIncrements('id');
 
-            $table->string('otp', 6);
-            $table->string('email', 150);
+            $table->string('otp',6);
+
+            // 👇 Identify user
+            $table->enum('user_type', ['vendor', 'hawker']);
+
+            // 👇 FK for Vendor (email)
+            $table->string('vendor_email', 150)->nullable()->default('N/A');
+
+            // 👇 FK for Hawker (mobile)
+            $table->string('hawker_mobile', 15)->nullable()->default('N/A');
 
             $table->enum('status', ['unverified', 'verified'])
                   ->default('unverified');
@@ -28,8 +32,14 @@ return new class extends Migration
             $table->timestamp('expires_at')
                   ->default(DB::raw("CURRENT_TIMESTAMP + INTERVAL '10 minutes'"));
 
-            $table->foreign('email')
+            // ✅ Foreign Keys
+            $table->foreign('vendor_email')
                   ->references('email')
+                  ->on('vendors')
+                  ->onDelete('cascade');
+
+            $table->foreign('hawker_mobile')
+                  ->references('phone_number')
                   ->on('hawkers')
                   ->onDelete('cascade');
         });
@@ -38,6 +48,5 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('otp');
-        DB::statement("DROP TYPE IF EXISTS otp_status");
     }
 };

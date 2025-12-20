@@ -2,56 +2,40 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Database\Eloquent\Model;
 
-class Vendor extends Authenticatable
+class Vendor extends Model
 {
-    use HasFactory;
-
     protected $table = 'vendors';
 
+    // Email as Primary Key
+    protected $primaryKey = 'email';
+    public $incrementing = false;
+    protected $keyType = 'string';
+
+    // DB manages timestamps
+    public $timestamps = false;
+
     protected $fillable = [
-        'name',
-        'contact_person',
-        'phone',
         'email',
+        'fullname',
+        'contact_no',
+        'aadhaar_number',
+        'firm_name',
+        'product_category',
+        'firm_addr',
         'password',
-        'aadhaar_no',
-        'address_line1',
-        'address_line2',
+        'status',
         'city',
         'state',
         'pincode',
-        'country',
-        'gst_no',
-        'image',
-        'status',
+        'gstin_no',
+        'profile_photo_url',
+        'aadhaar_verified',
+        'role'
     ];
 
     protected $hidden = [
-        'password',
+        'password'
     ];
-
-    /**
-     * 🔐 Automatically hash password when set
-     */
-    public function setPasswordAttribute($value)
-    {
-        // Avoid double hashing
-        if (!Hash::needsRehash($value)) {
-            $this->attributes['password'] = $value;
-        } else {
-            $this->attributes['password'] = Hash::make($value);
-        }
-    }
-
-    /**
-     * Relationships
-     */
-    public function otps()
-    {
-        return $this->hasMany(VendorOtp::class);
-    }
 }

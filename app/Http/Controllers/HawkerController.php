@@ -53,12 +53,13 @@ class HawkerController extends Controller
 
     $otp = generate_otp(6);
 
-    $otpData = [
-        'otp'   => $otp,
-        'email' => $email,
-    ];
-
-    $result2 = $this->otpModel->registerOTP($otpData);
+     Otp::create([
+                'otp'          => Hash::make($otp),
+                'user_type'    => 'hawker',
+                'hawker_mobile' => $hawkers->phone_number,
+                'status'       => 'unverified',
+                'expires_at'   => now()->addMinutes(10),
+            ]);
 
     if (!$result2['success']) {
         return response()->json([

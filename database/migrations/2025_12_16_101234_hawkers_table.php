@@ -9,10 +9,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("
-            CREATE TYPE verification_status AS ENUM ('unverified', 'verified')
-        ");
-
         Schema::create('hawkers', function (Blueprint $table) {
             $table->bigIncrements('hawker_id');
 
