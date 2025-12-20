@@ -24,7 +24,7 @@ const JWT_BLACKLIST_PREFIX = 'jwt_blacklist_';
 // Create JWT Token
 function create_jwt(array $payload, int $expiryMinutes = 10): string
 {
-    $key = config('JWT_SECRET');
+    $key = config('jwt.secret');
 
     if (!$key) {
         throw new \Exception('JWT_SECRET is not set');
@@ -34,8 +34,6 @@ function create_jwt(array $payload, int $expiryMinutes = 10): string
 
     $issuedAt = time();
     $expire = $issuedAt + ($expiryMinutes * 60);
-
-    echo "JWT Token created successfully.";
 
     return JWT::encode(array_merge($payload, [
         'iat' => $issuedAt,

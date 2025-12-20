@@ -90,11 +90,11 @@ class HawkerController extends Controller
     }
 
     session(['cu_email' => $email]);
-    echo "Session set for cu_email: " . session('cu_email');
-
+    
     return response()->json([
         'status'  => 'success',
         'message' => 'Registration successful, kindly check your email for OTP verification.',
+        'redirectTo' => '/verify_otp',
     ]);
     }
 
@@ -117,19 +117,17 @@ class HawkerController extends Controller
             return response()->json([
                 'status' => 'failed',
                 'message' => 'Invalid email or password.',
+                'redirectTo' => '/',
             ], 401);
         }
 
         $token = create_jwt(['cuser' => $data['email'], 'role' => 'hawker'], 10);
-        if(is_jwt_valid($token)) {
-            echo "JWT Token is valid.";
-        }else{
-            echo "JWT Token is invalid.";
-        }
 
         return response()->json([
             'status' => 'success',
             'message' => 'Login successful.',
+            'redirectTo' => '/dashboard_hawker',
+            'token' => $token,
         ]);
     }
 
