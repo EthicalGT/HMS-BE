@@ -14,9 +14,10 @@ Route::post('/hawker/login', [HawkerController::class, 'loginHawker']);
 Route::get('/current_otp_user', [HawkerController::class, 'getCurrentUser']);
 
 //vendor's api
-Route::post('/vendor/register', [VendorController::class, 'register']);
-Route::post('/vendor/verify-otp', [VendorController::class, 'verifyOtp']);
-Route::post('/vendor/login', [VendorController::class, 'login']);
+Route::post('/vendor/register', [VendorController::class, 'registerVendor']);
+Route::post('/vendor/verify', [VendorController::class, 'validateOTP']);
+Route::post('/vendor/login', [VendorController::class, 'loginVendor']);
+Route::get('/vendor/current_otp_user', [VendorController::class, 'getCurrentUser']);
 Route::get('/vendors', [VendorController::class, 'fetchAllVendors']);
 
 

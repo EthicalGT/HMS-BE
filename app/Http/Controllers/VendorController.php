@@ -6,164 +6,166 @@ use App\Models\Vendor;
 use App\Models\Otp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Database\QueryException;
 use App\Services\EmailService;
-use Exception;
+use Illuminate\Support\Facades\Session;
+
 
 class VendorController extends Controller
 {
-    /**
-     * Vendor Registration + Send OTP
-     */
-    public function register(Request $request)
+    private $vendorsModel;
+    private $otpModel;
+
+    public function __construct()
     {
-       
-        try {
-            // 2️⃣ Create Vendor
-            $vendor = Vendor::create([
-                'email'            => $request->email,
-                'fullname'         => $request->full_name,
-                'contact_no'       => $request->phone_number,
-                'aadhaar_number'   => $request->aadhar_number,
-                'firm_name'        => $request->firm_name,
-                'product_category' => $request->product_category,
-                'firm_addr'        => $request->address,
-                'password'         => Hash::make($request->password),
-                'city'             => $request->city,
-                'gstin_no'         => $request->gst_number,
-                'state'            => $request->state,
-                'pincode'          => $request->pincode,
-                'status'           => 'active',
-                'role'             => 'vendor',
-                'aadhaar_verified' => 'unverified'
-            ]);
-
-            // 3️⃣ Generate OTP (helper)
-            $otp = generate_otp(6);
-
-            // 4️⃣ Save OTP in SAME otp table
-            Otp::create([
-                'otp'          => $otp,
-                'user_type'    => 'vendor',
-                'vendor_email' => $vendor->email,
-                'status'       => 'unverified',
-                'expires_at'   => now()->addMinutes(10),
-            ]);
-
-            // 5️⃣ Send OTP email
-            $emailService = new EmailService();
-            $subject = "Vendor Account Verification Code";
-            $body = "
-                <h2>Vendor Account Verification</h2>
-                <p>Hello {$vendor->fullname},</p>
-                <p>Your OTP is:</p>
-                <h1 style='color:#2d89ef;'>{$otp}</h1>
-                <p>This OTP is valid for <b>10 minutes</b>.</p>
-                <p>Do not share this OTP.</p>
-                <br>
-                <p>Regards,<br>HMS Team</p>
-            ";
-
-            $emailService->send($vendor->email, $subject, $body);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Vendor registered successfully. OTP sent to email.',
-                'data' => [
-                    'email' => $vendor->email,
-                    'role'  => 'vendor'
-                ]
-            ], 201);
-
-        } catch (QueryException $e) {
-
-            if ($e->getCode() == 23000) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Duplicate entry',
-                    'error'   => 'Email / Contact / Aadhaar already exists'
-                ], 409);
-            }
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Database error',
-                'error'   => $e->getMessage()
-            ], 500);
-
-        } catch (Exception $e) {
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Internal server error',
-                'error'   => $e->getMessage()
-            ], 500);
-        }
+        $this->vendorsModel = new Vendor();
+        $this->otpModel = new Otp();
     }
 
-    /**
-     * Vendor OTP Verification
-     */
-    public function verifyOtp(Request $request)
+    public function registerVendor(Request $req)
     {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'otp' => 'required|string|size:6',
-        ]);
+        $email = $req->email;
 
-        if ($validator->fails()) {
+        if (session()->has('cu_email')) {
             return response()->json([
-                'success' => false,
-                'errors'  => $validator->errors()
-            ], 422);
-        }
-
-        // Find valid OTP
-        $otpRow = Otp::where('user_type', 'vendor')
-            ->where('vendor_email', $request->email)
-            ->where('status', 'unverified')
-            ->where('expires_at', '>', now())
-            ->latest()
-            ->first();
-
-        if (!$otpRow || $request->otp !== $otpRow->otp)
-            {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid or expired OTP'
+                'status' => 'failed',
+                'message' => 'OTP already sent. Please check email.'
             ], 400);
         }
 
-        // Mark OTP verified
-        $otpRow->update(['status' => 'verified']);
+        $data = [
+            'email'            => $req->email,
+            'fullname'         => $req->full_name,
+            'contact_no'       => $req->phone_number,
+            'aadhaar_number'   => $req->aadhar_number,
+            'firm_name'        => $req->firm_name,
+            'product_category' => $req->product_category,
+            'firm_addr'        => $req->address,
+            'password'         => Hash::make($req->password),
+            'city'             => $req->city,
+            'gstin_no'         => $req->gst_number,
+            'state'            => $req->state,
+            'pincode'          => $req->pincode,
+            'status'           => 'active',
+            'role'             => 'vendor',
+            'aadhaar_verified' => 'unverified'
+        ];
 
-        // Update vendor Aadhaar verification
-        Vendor::where('email', $request->email)
-              ->update(['aadhaar_verified' => 'verified']);
+        $result = $this->vendorsModel->registerVendor($data);
+
+        if (!$result['success']) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => $result['error']
+            ], 400);
+        }
+
+        $otp = generate_otp(6);
+
+        $this->otpModel->registerOTP([
+            'vendor_email' => $email,
+            'otp' => $otp,
+            'user_type' => 'vendor'
+        ]);
+
+        $emailSender = new EmailService();
+        $emailSender->send(
+            $email,
+            'HMS Account Verification Code',
+            "<h3>Your OTP: <b>{$otp}</b></h3>"
+        );
+
+        session(['cu_email' => $email]);
 
         return response()->json([
-            'success' => true,
-            'message' => 'OTP verified successfully. Vendor account activated.'
+            'status' => 'success',
+            'message' => 'Registration successful. Check email for OTP.',
+            'redirectTo' => '/verify_otp'
+        ]);
+    }
+
+    public function loginVendor(Request $req)
+    {
+        if (!$this->vendorsModel->checkVendorPresent($req->email)) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Vendor account not found'
+            ], 404);
+        }
+
+        $storedHash = $this->vendorsModel->retrieveVendorPWD($req->email);
+
+        if (!Hash::check($req->password, $storedHash)) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Invalid credentials'
+            ], 401);
+        }
+
+        $token = create_jwt([
+            'cuser' => $req->email,
+            'role' => 'vendor'
+        ], 10);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Login successful',
+            'redirectTo' => '/dashboard_vendor',
+            'token' => $token
+        ]);
+    }
+
+    public function getCurrentUser()
+    {
+        $cuser = session('cu_email');
+
+        if (!$cuser) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'No active OTP session found'
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $cuser
+        ]);
+    }
+    public function validateOTP(Request $request)
+    {
+        $email = session('cu_email');
+
+        if (!$email) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Session expired. Please try again.'
+            ], 400);
+        }
+
+        $request->validate([
+            'otp' => 'required|string',
+        ]);
+
+        if (!$this->otpModel->checkOTP($email, $request->otp)) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Invalid OTP or OTP expired.'
+            ], 400);
+        }
+
+        if (!$this->otpModel->updateOTPStatus($email, $request->otp)) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'OTP status updation failed. Please try again.'
+            ], 400);
+        }
+
+        Session::forget('cu_email');
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'OTP verified successfully. You can proceed for login.',
+            'redirectTo' => '/vendor_dashboard',
         ], 200);
     }
 
-    public function fetchVendorData()
-    {
-        try {
-            $vendors = Vendor::all(); 
-
-            return response()->json([
-                'success' => true,
-                'count'   => $vendors->count(),
-                'data'    => $vendors
-            ], 200);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Something went wrong: '.$e->getMessage(),
-            ], 500);
-        }
-    }
 }

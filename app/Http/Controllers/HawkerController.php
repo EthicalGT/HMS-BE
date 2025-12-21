@@ -90,6 +90,8 @@ class HawkerController extends Controller
     }
 
     session(['cu_email' => $email]);
+    \Log::info('Session data:', session()->all());
+
     
     return response()->json([
         'status'  => 'success',
@@ -137,6 +139,7 @@ class HawkerController extends Controller
         if (!$cuser) {
             return response()->json([
                 'status' => 'failed',
+                'data'  =>  null,
                 'message' => 'No currently active user found for account otp verification.',
             ], 404);
         }
