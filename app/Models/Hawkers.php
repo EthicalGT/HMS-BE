@@ -39,4 +39,10 @@ public function checkHawkerPresent($email): ?bool
 
     return $count > 0;
 }
+public function retrieveHawkerMobileNo($email): ?string{
+    return DB::table($this->table)
+        ->where('email', $email)
+        ->where('status', 'active')
+        ->value('phone_number');
+}
 }

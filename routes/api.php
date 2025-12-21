@@ -11,7 +11,7 @@ use App\Http\Controllers\OTPController;
 Route::post('/hawker/register', [HawkerController::class, 'registerHawker']);
 Route::post('/hawker/verify', [OTPController::class, 'validateOTP']);
 Route::post('/hawker/login', [HawkerController::class, 'loginHawker']);
-Route::get('/current_otp_user', [HawkerController::class, 'getCurrentUser']);
+Route::get('/current_otp_user', [HawkerController::class, 'getCurrentVerifyingUser']);
 
 //vendor's api
 Route::post('/vendor/register', [VendorController::class, 'registerVendor']);

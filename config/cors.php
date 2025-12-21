@@ -2,11 +2,12 @@
 
 return [
 
-    'paths' => ['api/*'],
+    'paths' => ['api/*', 'hawker/*', 'vendor/*', 'login', 'register'],
 
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
+        'http://127.0.0.1:5173',
         'http://localhost:5173',
     ],
 
@@ -18,6 +19,5 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => true,
-
+    'supports_credentials' => false,
 ];
